@@ -1,0 +1,5 @@
+# © 2025 Luca Filipozzi. Some rights reserved. See LICENSE.
+
+[tools]
+java = "corretto-21"
+maven = "3.9.8"
