@@ -48,8 +48,8 @@ public class MyGraph {
     return graphPath.getVertexList().stream().filter(node -> node.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(EndReachedException::new);
   }
 
-  private void setNodesStatus(String challenge, Node.STATUS status) {
-    graph.vertexSet().stream().filter(node -> node.getChallenge().equals(challenge)).forEach(node -> node.setStatus(status));
+  private void setNodesStatus(Node.STATUS status) {
+    graph.vertexSet().stream().filter(node -> node.getChallenge().equals(currentChallenge)).forEach(node -> node.setStatus(status));
   }
 
   public String GET() {
@@ -60,7 +60,7 @@ public class MyGraph {
     if (currentChallenge == null) {
       return "invalid";
     }
-    setNodesStatus(currentChallenge, Node.STATUS.valueOf(status.toUpperCase()));
+    setNodesStatus(Node.STATUS.valueOf(status.toUpperCase()));
     try {
       currentChallenge = getNextUntriedNode().getChallenge();
       return "continue";
