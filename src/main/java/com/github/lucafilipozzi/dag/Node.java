@@ -1,12 +1,8 @@
 // © 2025 Luca Filipozzi. Some rights reserved. See LICENSE.
 package com.github.lucafilipozzi.dag;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@Builder
-@Data
 public class Node {
   public enum STATUS {
     UNTRIED,
@@ -15,10 +11,39 @@ public class Node {
   }
 
   private String id;
+  private STATUS status;
 
-  @EqualsAndHashCode.Exclude
-  @Builder.Default
-  private STATUS status = STATUS.UNTRIED;
+  public static Node of(String id) {
+    Node node = new Node();
+    node.id = id;
+    node.status = STATUS.UNTRIED;
+    return node;
+  }
+
+  @Override
+  public boolean equals(Object other) {
+    if (!(other instanceof Node)) {
+      return false;
+    }
+    return Objects.equals(((Node)other).id, this.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return id.hashCode();
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setStatus(STATUS status) {
+    this.status = status;
+  }
+
+  public STATUS getStatus() {
+    return status;
+  }
 
   public String getChallenge() {
     return id.split("-")[0];

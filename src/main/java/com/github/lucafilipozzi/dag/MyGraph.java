@@ -34,7 +34,7 @@ public class MyGraph {
 
     GraphMLImporter<Node, DefaultWeightedEdge> importer = new GraphMLImporter<>();
     importer.setEdgeWeightAttributeName("weight");
-    importer.setVertexFactory(id -> Node.builder().id(id).build());
+    importer.setVertexFactory(Node::of);
     importer.importGraph(myGraph.graph, reader);
 
     myGraph.start = myGraph.graph.vertexSet().stream().filter(node -> node.getId().equals("START")).findFirst().orElseThrow();
