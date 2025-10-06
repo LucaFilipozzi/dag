@@ -4,9 +4,15 @@ package com.github.lucafilipozzi.dag;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Singular;
 
 @Builder
-@Data
 public class User {
+  @Singular
   private Set<String> challenges;
+
+  public Set<String> getChallenges() {
+    return Set.copyOf(challenges);
+  }
 }

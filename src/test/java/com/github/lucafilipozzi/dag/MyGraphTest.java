@@ -4,7 +4,6 @@ package com.github.lucafilipozzi.dag;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.StringReader;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +56,12 @@ class MyGraphTest {
 
   @BeforeEach
   void setUp() {
-    User user = User.builder().challenges(Set.of("DVP", "DSC", "TSC")).build();
+    User user = User.builder()
+      .challenge("DVP")
+      .challenge("DSC")
+      .challenge("TSC")
+      .build();
+
     myGraph = MyGraph.create(new StringReader(GRAPH), user);
   }
 
