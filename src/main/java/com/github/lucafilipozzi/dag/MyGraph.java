@@ -2,6 +2,7 @@
 package com.github.lucafilipozzi.dag;
 
 import java.io.Reader;
+import java.io.Writer;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -12,6 +13,8 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.MaskSubgraph;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.nio.graphml.GraphMLImporter;
+import org.jgrapht.nio.json.JSONExporter;
+import org.jgrapht.nio.json.JSONImporter;
 
 public class MyGraph {
   private final Graph<Node, DefaultWeightedEdge> graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
@@ -79,5 +82,59 @@ public class MyGraph {
       currentChallenge = null;
       return "success";
     }
+  }
+
+  public void dump(Writer writer) {
+    JSONExporter<Node, DefaultWeightedEdge> exporter = new JSONExporter<>();
+    exporter.setVertexIdProvider(Node::getId);
+    exporter.setVertexAttributeProvider(node -> {
+      var map = new java.util.LinkedHashMap<String, org.jgrapht.nio.Attribute>();
+      map.put("status", org.jgrapht.nio.DefaultAttribute.createAttribute(node.getStatus().name()));
+      return map;
+    });
+    exporter.setEdgeAttributeProvider(edge -> {
+      var map = new java.util.LinkedHashMap<String, org.jgrapht.nio.Attribute>();
+      map.put("weight", org.jgrapht.nio.DefaultAttribute.createAttribute(graph.getEdgeWeight(edge)));
+      return map;
+    });
+    exporter.exportGraph(graph, writer);
+  }
+
+  public static MyGraph load(Reader reader) {
+    MyGraph myGraph = new MyGraph();
+
+    JSONImporter<Node, DefaultWeightedEdge> importer = new JSONImporter<>();
+    importer.setVertexFactory(Node::of);
+    importer.addVertexAttributeConsumer((pair, attribute) -> {
+      Node node = pair.getFirst();
+      String key = pair.getSecond();
+      if ("status".equals(key)) {
+        node.setStatus(Node.STATUS.valueOf(attribute.getValue()));
+      }
+    });
+    importer.addEdgeAttributeConsumer((pair, attribute) -> {
+      DefaultWeightedEdge edge = pair.getFirst();
+      String key = pair.getSecond();
+      if ("weight".equals(key)) {
+        myGraph.graph.setEdgeWeight(edge, Double.parseDouble(attribute.getValue()));
+      }
+    });
+
+    importer.importGraph(myGraph.graph, reader);
+
+    myGraph.start = myGraph.graph.vertexSet().stream()
+      .filter(node -> node.getId().equals("START"))
+      .findFirst().orElseThrow();
+    myGraph.end = myGraph.graph.vertexSet().stream()
+      .filter(node -> node.getId().equals("END"))
+      .findFirst().orElseThrow();
+
+    try {
+      myGraph.currentChallenge = myGraph.getNextUntriedNode().getChallenge();
+    } catch (NoPathFoundException | EndReachedException e) {
+      myGraph.currentChallenge = null;
+    }
+
+    return myGraph;
   }
 }

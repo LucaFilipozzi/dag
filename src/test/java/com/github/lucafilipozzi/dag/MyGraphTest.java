@@ -4,6 +4,7 @@ package com.github.lucafilipozzi.dag;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,17 @@ class MyGraphTest {
   void setUp() {
     User user = User.of(Set.of("DVP", "DSC", "TSC"));
     myGraph = MyGraph.of(new StringReader(GRAPH), user);
+  }
+
+  @Test
+  void test_dump_and_load() {
+    assertEquals("DVP", myGraph.GET());
+    assertEquals("continue", myGraph.POST("success"));
+    StringWriter stringWriter = new StringWriter();
+    myGraph.dump(stringWriter);
+    MyGraph newGraph = MyGraph.load(new StringReader(stringWriter.toString()));
+    assertEquals("DSC", newGraph.GET());
+    assertEquals("success", newGraph.POST("success"));
   }
 
   @Test
