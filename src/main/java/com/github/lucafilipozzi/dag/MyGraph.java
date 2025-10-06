@@ -3,7 +3,9 @@ package com.github.lucafilipozzi.dag;
 
 import java.io.Reader;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.jgrapht.Graph;
@@ -12,6 +14,8 @@ import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.MaskSubgraph;
 import org.jgrapht.graph.SimpleDirectedWeightedGraph;
+import org.jgrapht.nio.Attribute;
+import org.jgrapht.nio.DefaultAttribute;
 import org.jgrapht.nio.graphml.GraphMLImporter;
 import org.jgrapht.nio.json.JSONExporter;
 import org.jgrapht.nio.json.JSONImporter;
@@ -24,13 +28,11 @@ public class MyGraph {
   private final DijkstraShortestPath<Node, DefaultWeightedEdge> shortestPath = new DijkstraShortestPath<>(maskSubgraph);
   private Node start;
   private Node end;
-  private String currentChallenge = null;
 
   static class EndReachedException extends RuntimeException { /* intentionally empty */ }
   static class NoPathFoundException extends RuntimeException { /* intentionally empty */ }
 
-  private MyGraph() {
-  }
+  private MyGraph() { /* hide constructor */ }
 
   public static MyGraph of(Reader reader, User user) {
     MyGraph myGraph = new MyGraph();
@@ -49,8 +51,6 @@ public class MyGraph {
       .filter(node -> !node.equals(myGraph.start) && !node.equals(myGraph.end))
       .forEach(node -> node.setStatus(user.getChallenges().contains(node.getChallenge()) ? Node.STATUS.UNTRIED : Node.STATUS.FAILURE));
 
-    myGraph.currentChallenge = myGraph.getNextUntriedNode().getChallenge();
-
     return myGraph;
   }
 
@@ -59,27 +59,33 @@ public class MyGraph {
     return graphPath.getVertexList().stream().filter(node -> node.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(EndReachedException::new);
   }
 
-  private void setNodesStatus(Node.STATUS status) {
-    graph.vertexSet().stream().filter(node -> node.getChallenge().equals(currentChallenge)).forEach(node -> node.setStatus(status));
+  private void setNodesStatus(String challenge, Node.STATUS status) {
+    graph.vertexSet().stream().filter(node -> node.getChallenge().equals(challenge)).forEach(node -> node.setStatus(status));
   }
 
   public String GET() {
-    return currentChallenge;
+    try {
+      return getNextUntriedNode().getChallenge();
+    } catch (RuntimeException e) {
+      return null;
+    }
   }
 
   public String POST(String status) {
-    if (currentChallenge == null || !List.of("success", "failure").contains(status)) {
+    if (!List.of("success", "failure").contains(status)) {
       return "invalid";
     }
-    setNodesStatus(Node.STATUS.valueOf(status.toUpperCase()));
     try {
-      currentChallenge = getNextUntriedNode().getChallenge();
+      setNodesStatus(getNextUntriedNode().getChallenge(), Node.STATUS.valueOf(status.toUpperCase()));
+    } catch (RuntimeException ignored) {
+      return "invalid";
+    }
+    try {
+      getNextUntriedNode().getChallenge();
       return "continue";
     } catch (NoPathFoundException e) {
-      currentChallenge = null;
       return "failure";
     } catch (EndReachedException e) {
-      currentChallenge = null;
       return "success";
     }
   }
@@ -88,13 +94,13 @@ public class MyGraph {
     JSONExporter<Node, DefaultWeightedEdge> exporter = new JSONExporter<>();
     exporter.setVertexIdProvider(Node::getId);
     exporter.setVertexAttributeProvider(node -> {
-      var map = new java.util.LinkedHashMap<String, org.jgrapht.nio.Attribute>();
-      map.put("status", org.jgrapht.nio.DefaultAttribute.createAttribute(node.getStatus().name()));
+      Map<String, Attribute> map = new HashMap<>();
+      map.put("status", DefaultAttribute.createAttribute(node.getStatus().name()));
       return map;
     });
     exporter.setEdgeAttributeProvider(edge -> {
-      var map = new java.util.LinkedHashMap<String, org.jgrapht.nio.Attribute>();
-      map.put("weight", org.jgrapht.nio.DefaultAttribute.createAttribute(graph.getEdgeWeight(edge)));
+      Map<String, Attribute> map = new HashMap<>();
+      map.put("weight", DefaultAttribute.createAttribute(graph.getEdgeWeight(edge)));
       return map;
     });
     exporter.exportGraph(graph, writer);
@@ -122,18 +128,8 @@ public class MyGraph {
 
     importer.importGraph(myGraph.graph, reader);
 
-    myGraph.start = myGraph.graph.vertexSet().stream()
-      .filter(node -> node.getId().equals("START"))
-      .findFirst().orElseThrow();
-    myGraph.end = myGraph.graph.vertexSet().stream()
-      .filter(node -> node.getId().equals("END"))
-      .findFirst().orElseThrow();
-
-    try {
-      myGraph.currentChallenge = myGraph.getNextUntriedNode().getChallenge();
-    } catch (NoPathFoundException | EndReachedException e) {
-      myGraph.currentChallenge = null;
-    }
+    myGraph.start = myGraph.graph.vertexSet().stream().filter(node -> node.getId().equals("START")).findFirst().orElseThrow();
+    myGraph.end = myGraph.graph.vertexSet().stream().filter(node -> node.getId().equals("END")).findFirst().orElseThrow();
 
     return myGraph;
   }
