@@ -14,9 +14,6 @@ import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.nio.graphml.GraphMLImporter;
 
 public class MyGraph {
-  private final User user;
-  private final Reader reader;
-
   private final Graph<Node, DefaultWeightedEdge> graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
   private final Predicate<Node> vertexMask = node -> node.getStatus().equals(Node.STATUS.FAILURE);
   private final Predicate<DefaultWeightedEdge> edgeMask = edge -> false; // edgeMask not used
@@ -29,13 +26,11 @@ public class MyGraph {
   static class EndReachedException extends RuntimeException { /* intentionally empty */ }
   static class NoPathFoundException extends RuntimeException { /* intentionally empty */ }
 
-  private MyGraph(Reader reader, User user) {
-    this.reader = reader;
-    this.user = user;
+  private MyGraph() {
   }
 
-  public static MyGraph create(Reader reader, User user) { // factory method
-    MyGraph myGraph = new MyGraph(reader, user);
+  public static MyGraph of(Reader reader, User user) {
+    MyGraph myGraph = new MyGraph();
 
     GraphMLImporter<Node, DefaultWeightedEdge> importer = new GraphMLImporter<>();
     importer.setEdgeWeightAttributeName("weight");
