@@ -2,6 +2,7 @@
 package com.github.lucafilipozzi.dag;
 
 import java.io.Reader;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.jgrapht.Graph;
@@ -13,34 +14,46 @@ import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.jgrapht.nio.graphml.GraphMLImporter;
 
 public class MyGraph {
+  private final User user;
+  private final Reader reader;
+
   private final Graph<Node, DefaultWeightedEdge> graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
   private final Predicate<Node> vertexMask = node -> node.getStatus().equals(Node.STATUS.FAILURE);
   private final Predicate<DefaultWeightedEdge> edgeMask = edge -> false; // edgeMask not used
   private final Graph<Node, DefaultWeightedEdge> maskSubgraph = new MaskSubgraph<>(graph, vertexMask, edgeMask);
   private final DijkstraShortestPath<Node, DefaultWeightedEdge> shortestPath = new DijkstraShortestPath<>(maskSubgraph);
-  private final Node start;
-  private final Node end;
+  private Node start;
+  private Node end;
   private String currentChallenge = null;
 
   static class EndReachedException extends RuntimeException { /* intentionally empty */ }
   static class NoPathFoundException extends RuntimeException { /* intentionally empty */ }
 
-  MyGraph(Reader reader, User user) {
+  private MyGraph(Reader reader, User user) {
+    this.reader = reader;
+    this.user = user;
+  }
+
+  public static MyGraph create(Reader reader, User user) { // factory method
+    MyGraph myGraph = new MyGraph(reader, user);
+
     GraphMLImporter<Node, DefaultWeightedEdge> importer = new GraphMLImporter<>();
     importer.setEdgeWeightAttributeName("weight");
     importer.setVertexFactory(id -> Node.builder().id(id).build());
-    importer.importGraph(graph, reader);
+    importer.importGraph(myGraph.graph, reader);
 
-    start = graph.vertexSet().stream().filter(node -> node.getId().equals("START")).findFirst().orElseThrow();
-    end = graph.vertexSet().stream().filter(node -> node.getId().equals("END")).findFirst().orElseThrow();
+    myGraph.start = myGraph.graph.vertexSet().stream().filter(node -> node.getId().equals("START")).findFirst().orElseThrow();
+    myGraph.end = myGraph.graph.vertexSet().stream().filter(node -> node.getId().equals("END")).findFirst().orElseThrow();
 
-    start.setStatus(Node.STATUS.SUCCESS);
-    end.setStatus(Node.STATUS.SUCCESS);
-    graph.vertexSet().stream()
-        .filter(node -> !node.equals(start) && !node.equals(end))
-        .forEach(node -> node.setStatus(user.getChallenges().contains(node.getChallenge()) ? Node.STATUS.UNTRIED : Node.STATUS.FAILURE));
+    myGraph.start.setStatus(Node.STATUS.SUCCESS);
+    myGraph.end.setStatus(Node.STATUS.SUCCESS);
+    myGraph.graph.vertexSet().stream()
+      .filter(node -> !node.equals(myGraph.start) && !node.equals(myGraph.end))
+      .forEach(node -> node.setStatus(user.getChallenges().contains(node.getChallenge()) ? Node.STATUS.UNTRIED : Node.STATUS.FAILURE));
 
-    currentChallenge = getNextUntriedNode().getChallenge();
+    myGraph.currentChallenge = myGraph.getNextUntriedNode().getChallenge();
+
+    return myGraph;
   }
 
   private Node getNextUntriedNode() {
@@ -57,7 +70,7 @@ public class MyGraph {
   }
 
   public String POST(String status) {
-    if (currentChallenge == null) {
+    if (currentChallenge == null || !List.of("success", "failure").contains(status)) {
       return "invalid";
     }
     setNodesStatus(Node.STATUS.valueOf(status.toUpperCase()));

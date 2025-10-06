@@ -58,23 +58,24 @@ class MyGraphTest {
   @BeforeEach
   void setUp() {
     User user = User.builder().challenges(Set.of("DVP", "DSC", "TSC")).build();
-    myGraph = new MyGraph(new StringReader(GRAPH), user);
+    myGraph = MyGraph.create(new StringReader(GRAPH), user);
   }
 
   @Test
   void test_SuccessDVP_SuccessDSC_Success() {
-      assertEquals("DVP", myGraph.GET() );
-      assertEquals("continue", myGraph.POST("success"));
-      assertEquals("DSC", myGraph.GET());
-      assertEquals("success", myGraph.POST("success"));
-      assertNull(myGraph.GET());
-      assertEquals("invalid", myGraph.POST("success"));
-      assertEquals("invalid", myGraph.POST("failure"));
-    }
+    assertEquals("DVP", myGraph.GET());
+    assertEquals("continue", myGraph.POST("success"));
+    assertEquals("DSC", myGraph.GET());
+    assertEquals("success", myGraph.POST("success"));
+    assertNull(myGraph.GET());
+    assertEquals("invalid", myGraph.POST("success"));
+    assertEquals("invalid", myGraph.POST("failure"));
+    assertEquals("invalid", myGraph.POST("garbage"));
+  }
 
   @Test
   void test_SuccessDVP_FailureDSC_SuccessTSC_Success() {
-    assertEquals("DVP", myGraph.GET() );
+    assertEquals("DVP", myGraph.GET());
     assertEquals("continue", myGraph.POST("success"));
     assertEquals("DSC", myGraph.GET());
     assertEquals("continue", myGraph.POST("failure"));
@@ -83,6 +84,7 @@ class MyGraphTest {
     assertNull(myGraph.GET());
     assertEquals("invalid", myGraph.POST("success"));
     assertEquals("invalid", myGraph.POST("failure"));
+    assertEquals("invalid", myGraph.POST("garbage"));
   }
 
   @Test
@@ -96,6 +98,7 @@ class MyGraphTest {
     assertNull(myGraph.GET());
     assertEquals("invalid", myGraph.POST("success"));
     assertEquals("invalid", myGraph.POST("failure"));
+    assertEquals("invalid", myGraph.POST("garbage"));
   }
 
   @Test
@@ -109,6 +112,7 @@ class MyGraphTest {
     assertNull(myGraph.GET());
     assertEquals("invalid", myGraph.POST("success"));
     assertEquals("invalid", myGraph.POST("failure"));
+    assertEquals("invalid", myGraph.POST("garbage"));
   }
 
   @Test
@@ -122,6 +126,7 @@ class MyGraphTest {
     assertNull(myGraph.GET());
     assertEquals("invalid", myGraph.POST("success"));
     assertEquals("invalid", myGraph.POST("failure"));
+    assertEquals("invalid", myGraph.POST("garbage"));
   }
 
   @Test
@@ -133,5 +138,6 @@ class MyGraphTest {
     assertNull(myGraph.GET());
     assertEquals("invalid", myGraph.POST("success"));
     assertEquals("invalid", myGraph.POST("failure"));
+    assertEquals("invalid", myGraph.POST("garbage"));
   }
 }
