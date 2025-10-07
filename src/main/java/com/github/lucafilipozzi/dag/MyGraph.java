@@ -36,6 +36,19 @@ public class MyGraph {
 
   private MyGraph() { /* hide constructor */ }
 
+  /**
+   * Creates a new MyGraph instance from a GraphML file and initializes node statuses based on user's available challenges.
+   * <p>
+   * This factory method imports a directed weighted graph from GraphML format, identifies START and END nodes,
+   * and sets the initial status of each node based on whether the user has access to that challenge type.
+   * START and END nodes are always marked as SUCCESS. Other nodes are marked as UNTRIED if the user has
+   * access to their challenge type, or FAILURE otherwise.
+   *
+   * @param reader the Reader containing GraphML data representing the challenge graph
+   * @param user the User object containing the set of challenges available to this user
+   * @return a new MyGraph instance with nodes initialized according to user's challenge access
+   * @throws java.util.NoSuchElementException if START or END nodes are not found in the graph
+   */
   public static MyGraph of(Reader reader, User user) {
     MyGraph myGraph = new MyGraph();
 
@@ -56,12 +69,30 @@ public class MyGraph {
     return myGraph;
   }
 
+  /**
+   * Retrieves the challenge identifier of the next untried node in the shortest path
+   * between the start and end nodes of the graph. If the shortest path does not exist,
+   * or if there are no untried nodes along the path, exceptions are thrown to signify
+   * specific cases.
+   *
+   * @return the challenge identifier of the first untried node in the shortest path
+   * @throws GetChallengeFailure if no shortest path exists between the start and end nodes
+   * @throws GetChallengeSuccess if all nodes along the shortest path are already tried or marked as success
+   */
   public String getChallenge() {
     GraphPath<Node, DefaultWeightedEdge> graphPath = Optional.ofNullable(shortestPath.getPath(start, end)).orElseThrow(GetChallengeFailure::new);
     Node node = graphPath.getVertexList().stream().filter(x -> x.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(GetChallengeSuccess::new);
     return node.getChallenge(); // continue
   }
 
+  /**
+   * Updates the status of all nodes in the graph that match the challenge identifier of
+   * the current challenge.  The status is updated to the provided value. The status value
+   * is case-insensitive and must match one of the allowable statuses in {@link Node.STATUS}.
+   *
+   * @param status the new status to assign to the matching nodes; must be one of "SUCCESS" or "FAILURE" (case-insensitive)
+   * @throws SetStatusException if the update process encounters any failure
+   */
   public void setStatus(String status) {
     try {
       String challenge = getChallenge();
@@ -71,6 +102,14 @@ public class MyGraph {
     }
   }
 
+  /**
+   * Exports the current state of the graph in JSON format to the provided Writer.
+   * The exported JSON includes attributes associated with the graph's vertices and edges:
+   * - Vertex attributes include the node's status.
+   * - Edge attributes include the weight of the edge.
+   *
+   * @param writer the Writer to which the graph's JSON representation will be output
+   */
   public void dump(Writer writer) {
     JSONExporter<Node, DefaultWeightedEdge> exporter = new JSONExporter<>();
     exporter.setVertexIdProvider(Node::getId);
@@ -87,6 +126,17 @@ public class MyGraph {
     exporter.exportGraph(graph, writer);
   }
 
+  /**
+   * Loads a graph from the provided JSON data represented by the given reader.
+   * This method imports a weighted directed graph and extracts `START` and `END`
+   * nodes while setting certain attributes for nodes and edges. It expects specific
+   * attributes such as node statuses and edge weights to be present and properly
+   * formatted within the JSON structure.
+   *
+   * @param reader the Reader containing JSON data for the graph
+   * @return a new MyGraph instance constructed from the JSON data
+   * @throws java.util.NoSuchElementException if `START` or `END` nodes are not found in the graph
+   */
   public static MyGraph load(Reader reader) {
     MyGraph myGraph = new MyGraph();
 
