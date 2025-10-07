@@ -4,7 +4,6 @@ package com.github.lucafilipozzi.dag;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -21,6 +20,8 @@ import org.jgrapht.nio.json.JSONExporter;
 import org.jgrapht.nio.json.JSONImporter;
 
 public class MyGraph {
+  private static final String EDGE_WEIGHT_ATTRIBUTE_NAME =  "weight";
+  private static final String NODE_STATUS_ATTRIBUTE_NAME =  "status";
   private final Graph<Node, DefaultWeightedEdge> graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
   private final Predicate<Node> vertexMask = node -> node.getStatus().equals(Node.STATUS.FAILURE);
   private final Predicate<DefaultWeightedEdge> edgeMask = edge -> false; // edgeMask not used
@@ -39,7 +40,7 @@ public class MyGraph {
     MyGraph myGraph = new MyGraph();
 
     GraphMLImporter<Node, DefaultWeightedEdge> importer = new GraphMLImporter<>();
-    importer.setEdgeWeightAttributeName("weight");
+    importer.setEdgeWeightAttributeName(EDGE_WEIGHT_ATTRIBUTE_NAME);
     importer.setVertexFactory(Node::of);
     importer.importGraph(myGraph.graph, reader);
 
@@ -55,13 +56,13 @@ public class MyGraph {
     return myGraph;
   }
 
-  private String getChallenge() {
+  public String getChallenge() {
     GraphPath<Node, DefaultWeightedEdge> graphPath = Optional.ofNullable(shortestPath.getPath(start, end)).orElseThrow(GetChallengeFailure::new);
     Node node = graphPath.getVertexList().stream().filter(x -> x.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(GetChallengeSuccess::new);
     return node.getChallenge(); // continue
   }
 
-  private void setStatus(String status) {
+  public void setStatus(String status) {
     try {
       String challenge = getChallenge();
       graph.vertexSet().stream().filter(node -> node.getChallenge().equals(challenge)).forEach(node -> node.setStatus(Node.STATUS.valueOf(status.toUpperCase())));
@@ -70,42 +71,17 @@ public class MyGraph {
     }
   }
 
-  public String GET() {
-    try {
-      return getChallenge(); // return 2xx
-    } catch (RuntimeException ignored) {
-      return null;           // return 4xx
-    }
-  }
-
-  public String POST(String status) {
-    if (!List.of("success", "failure").contains(status)) {
-      return "invalid";      // return 4xx
-    }
-    try {
-      setStatus(status);
-      getChallenge();
-      return "continue";     // return 2xx
-    } catch (GetChallengeFailure ignored) {
-      return "failure";      // return 2xx
-    } catch (GetChallengeSuccess ignored) {
-      return "success";      // return 2xx
-    } catch (SetStatusException ignored) {
-      return "invalid";      // return 4xx
-    }
-  }
-
   public void dump(Writer writer) {
     JSONExporter<Node, DefaultWeightedEdge> exporter = new JSONExporter<>();
     exporter.setVertexIdProvider(Node::getId);
     exporter.setVertexAttributeProvider(node -> {
       Map<String, Attribute> map = new HashMap<>();
-      map.put("status", DefaultAttribute.createAttribute(node.getStatus().name()));
+      map.put(NODE_STATUS_ATTRIBUTE_NAME, DefaultAttribute.createAttribute(node.getStatus().name()));
       return map;
     });
     exporter.setEdgeAttributeProvider(edge -> {
       Map<String, Attribute> map = new HashMap<>();
-      map.put("weight", DefaultAttribute.createAttribute(graph.getEdgeWeight(edge)));
+      map.put(EDGE_WEIGHT_ATTRIBUTE_NAME, DefaultAttribute.createAttribute(graph.getEdgeWeight(edge)));
       return map;
     });
     exporter.exportGraph(graph, writer);
@@ -119,14 +95,14 @@ public class MyGraph {
     importer.addVertexAttributeConsumer((pair, attribute) -> {
       Node node = pair.getFirst();
       String key = pair.getSecond();
-      if ("status".equals(key)) {
+      if (NODE_STATUS_ATTRIBUTE_NAME.equals(key)) {
         node.setStatus(Node.STATUS.valueOf(attribute.getValue()));
       }
     });
     importer.addEdgeAttributeConsumer((pair, attribute) -> {
       DefaultWeightedEdge edge = pair.getFirst();
       String key = pair.getSecond();
-      if ("weight".equals(key)) {
+      if (EDGE_WEIGHT_ATTRIBUTE_NAME.equals(key)) {
         myGraph.graph.setEdgeWeight(edge, Double.parseDouble(attribute.getValue()));
       }
     });
