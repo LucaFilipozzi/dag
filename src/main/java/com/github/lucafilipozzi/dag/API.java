@@ -7,32 +7,34 @@ import java.io.StringWriter;
 import java.util.List;
 
 public class API {
-  String processManager;
+  String registry;
 
   private API() { /* hide constructor */ }
 
   public static API of(Reader reader, User user) {
     API api = new API();
-    api.saveToProcessManager(MyGraph.of(reader, user));
+    api.saveToRegistry(MyGraph.of(reader, user));
     return api;
   }
 
-  private MyGraph loadFromProcessManager() {
-    return MyGraph.load(new StringReader(processManager));
+  private MyGraph loadFromRegistry() {
+    return MyGraph.load(new StringReader(registry));
   }
 
-  private void saveToProcessManager(MyGraph myGraph) {
+  private void saveToRegistry(MyGraph myGraph) {
     StringWriter stringWriter = new StringWriter();
     myGraph.dump(stringWriter);
-    processManager = stringWriter.toString();
+    registry = stringWriter.toString();
   }
 
   public String get() {
-    MyGraph myGraph = loadFromProcessManager();
+    MyGraph myGraph = loadFromRegistry();
     try {
       return myGraph.getChallenge(); // return 2xx
     } catch (RuntimeException ignored) {
       return null;                   // return 4xx
+    } finally {
+      saveToRegistry(myGraph);
     }
   }
 
@@ -40,7 +42,7 @@ public class API {
     if (!List.of("success", "failure").contains(status)) {
       return "invalid";      // return 4xx
     }
-    MyGraph myGraph = loadFromProcessManager();
+    MyGraph myGraph = loadFromRegistry();
     try {
       myGraph.setStatus(status);
       myGraph.getChallenge();
@@ -52,7 +54,7 @@ public class API {
     } catch (MyGraph.SetStatusException ignored) {
       return "invalid";      // return 4xx
     } finally {
-      saveToProcessManager(myGraph);
+      saveToRegistry(myGraph);
     }
   }
 }
