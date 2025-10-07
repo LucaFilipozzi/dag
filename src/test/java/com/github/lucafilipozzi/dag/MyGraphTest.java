@@ -54,7 +54,7 @@ class MyGraphTest {
       </graphml>
       """;
 
-  private MyGraph myGraph;
+  MyGraph myGraph;
 
   @BeforeEach
   void setUp() {
@@ -64,92 +64,92 @@ class MyGraphTest {
 
   @Test
   void test_dump_and_load() {
-    assertEquals("DVP", myGraph.GET());
-    assertEquals("continue", myGraph.POST("success"));
+    assertEquals("DVP", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
     StringWriter stringWriter = new StringWriter();
     myGraph.dump(stringWriter);
     MyGraph newGraph = MyGraph.load(new StringReader(stringWriter.toString()));
-    assertEquals("DSC", newGraph.GET());
-    assertEquals("success", newGraph.POST("success"));
+    assertEquals("DSC", newGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
   }
 
   @Test
   void test_SuccessDVP_SuccessDSC_Success() {
-    assertEquals("DVP", myGraph.GET());
-    assertEquals("continue", myGraph.POST("success"));
-    assertEquals("DSC", myGraph.GET());
-    assertEquals("success", myGraph.POST("success"));
-    assertNull(myGraph.GET());
-    assertEquals("invalid", myGraph.POST("success"));
-    assertEquals("invalid", myGraph.POST("failure"));
-    assertEquals("invalid", myGraph.POST("garbage"));
+    assertEquals("DVP", myGraph.getChallenge() );
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertEquals("DSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.GetChallengeSuccess.class, () -> myGraph.getChallenge());
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("garbage"));
   }
 
   @Test
   void test_SuccessDVP_FailureDSC_SuccessTSC_Success() {
-    assertEquals("DVP", myGraph.GET());
-    assertEquals("continue", myGraph.POST("success"));
-    assertEquals("DSC", myGraph.GET());
-    assertEquals("continue", myGraph.POST("failure"));
-    assertEquals("TSC", myGraph.GET());
-    assertEquals("success", myGraph.POST("success"));
-    assertNull(myGraph.GET());
-    assertEquals("invalid", myGraph.POST("success"));
-    assertEquals("invalid", myGraph.POST("failure"));
-    assertEquals("invalid", myGraph.POST("garbage"));
+    assertEquals("DVP", myGraph.getChallenge() );
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertEquals("DSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertEquals("TSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.GetChallengeSuccess.class, () -> myGraph.getChallenge());
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("garbage"));
   }
 
   @Test
   void test_SuccessDVP_FailureDSC_FailureTSC_Failure() {
-    assertEquals("DVP", myGraph.GET() );
-    assertEquals("continue", myGraph.POST("success"));
-    assertEquals("DSC", myGraph.GET());
-    assertEquals("continue", myGraph.POST("failure"));
-    assertEquals("TSC", myGraph.GET());
-    assertEquals("failure", myGraph.POST("failure"));
-    assertNull(myGraph.GET());
-    assertEquals("invalid", myGraph.POST("success"));
-    assertEquals("invalid", myGraph.POST("failure"));
-    assertEquals("invalid", myGraph.POST("garbage"));
+    assertEquals("DVP", myGraph.getChallenge() );
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertEquals("DSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertEquals("TSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.GetChallengeFailure.class, () -> myGraph.getChallenge());
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("garbage"));
   }
 
   @Test
   void test_FailureDVP_SuccessDSC_SuccessTSC_Success() {
-    assertEquals("DVP", myGraph.GET() );
-    assertEquals("continue", myGraph.POST("failure"));
-    assertEquals("DSC", myGraph.GET());
-    assertEquals("continue", myGraph.POST("success"));
-    assertEquals("TSC", myGraph.GET());
-    assertEquals("success", myGraph.POST("success"));
-    assertNull(myGraph.GET());
-    assertEquals("invalid", myGraph.POST("success"));
-    assertEquals("invalid", myGraph.POST("failure"));
-    assertEquals("invalid", myGraph.POST("garbage"));
+    assertEquals("DVP", myGraph.getChallenge() );
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertEquals("DSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertEquals("TSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.GetChallengeSuccess.class, () -> myGraph.getChallenge());
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("garbage"));
   }
 
   @Test
   void test_FailureDVP_SuccessDSC_FailureTSC_Failure() {
-    assertEquals("DVP", myGraph.GET() );
-    assertEquals("continue", myGraph.POST("failure"));
-    assertEquals("DSC", myGraph.GET());
-    assertEquals("continue", myGraph.POST("success"));
-    assertEquals("TSC", myGraph.GET());
-    assertEquals("failure", myGraph.POST("failure"));
-    assertNull(myGraph.GET());
-    assertEquals("invalid", myGraph.POST("success"));
-    assertEquals("invalid", myGraph.POST("failure"));
-    assertEquals("invalid", myGraph.POST("garbage"));
+    assertEquals("DVP", myGraph.getChallenge() );
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertEquals("DSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    assertEquals("TSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.GetChallengeFailure.class, () -> myGraph.getChallenge());
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("garbage"));
   }
 
   @Test
   void test_FailureDVP_FailureDSC_Failure() {
-    assertEquals("DVP", myGraph.GET() );
-    assertEquals("continue", myGraph.POST("failure"));
-    assertEquals("DSC", myGraph.GET());
-    assertEquals("failure", myGraph.POST("failure"));
-    assertNull(myGraph.GET());
-    assertEquals("invalid", myGraph.POST("success"));
-    assertEquals("invalid", myGraph.POST("failure"));
-    assertEquals("invalid", myGraph.POST("garbage"));
+    assertEquals("DVP", myGraph.getChallenge() );
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertEquals("DSC", myGraph.getChallenge());
+    assertDoesNotThrow(() -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.GetChallengeFailure.class, () -> myGraph.getChallenge());
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("success"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("failure"));
+    assertThrows(MyGraph.SetStatusException.class, () -> myGraph.setStatus("garbage"));
   }
 }
