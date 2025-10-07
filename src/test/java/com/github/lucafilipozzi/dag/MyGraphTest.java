@@ -1,11 +1,15 @@
 // © 2025 Luca Filipozzi. Some rights reserved. See LICENSE.
 package com.github.lucafilipozzi.dag;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +24,19 @@ class MyGraphTest {
     InputStreamReader prototypeGraphReader = new InputStreamReader(
       Objects.requireNonNull(getClass().getResourceAsStream("/prototype-graph.xml")));
     myGraph = MyGraph.of(prototypeGraphReader, user);
+  }
+
+  @Test
+  void test_getChallenge() {
+    assertEquals("DVP", myGraph.getChallenge() );
+  }
+
+  @Test
+  void test_getChallenges() {
+    List<String> challenges = myGraph.getChallenges();
+    assertEquals(2, challenges.size());
+    assertTrue(challenges.contains("DVP"));
+    assertTrue(challenges.contains("DSC"));
   }
 
   @Test

@@ -4,11 +4,15 @@ package com.github.lucafilipozzi.dag;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.AllDirectedPaths;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.MaskSubgraph;
@@ -27,6 +31,7 @@ public class MyGraph {
   private final Predicate<DefaultWeightedEdge> edgeMask = edge -> false; // edgeMask not used
   private final Graph<Node, DefaultWeightedEdge> maskSubgraph = new MaskSubgraph<>(graph, vertexMask, edgeMask);
   private final DijkstraShortestPath<Node, DefaultWeightedEdge> shortestPath = new DijkstraShortestPath<>(maskSubgraph);
+  private final AllDirectedPaths<Node, DefaultWeightedEdge> allDirectedPaths = new AllDirectedPaths<>(maskSubgraph);
   private Node start;
   private Node end;
 
@@ -83,6 +88,27 @@ public class MyGraph {
     GraphPath<Node, DefaultWeightedEdge> graphPath = Optional.ofNullable(shortestPath.getPath(start, end)).orElseThrow(GetChallengeFailure::new);
     Node node = graphPath.getVertexList().stream().filter(x -> x.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(GetChallengeSuccess::new);
     return node.getChallenge(); // continue
+  }
+
+  /**
+   * Retrieves a list of unique challenge identifiers from the untried nodes in all directed paths
+   * between the start and end nodes of the graph. The challenges are filtered based on their
+   * prefix matching the first character of the current challenge identifier.
+   *
+   * @return a list of distinct challenge identifiers corresponding to untried nodes in the graph
+   */
+  public List<String> getChallenges() {
+    List<GraphPath<Node, DefaultWeightedEdge>> graphPaths = allDirectedPaths.getAllPaths(start, end, false, 100);
+    String challenge = getChallenge();
+    Set<String> challenges =  new HashSet<>();
+    graphPaths.forEach(graphPath ->
+      graphPath.getVertexList().stream()
+        .filter(node -> node.getStatus().equals(Node.STATUS.UNTRIED))
+        .findFirst()
+        .filter(node -> node.getChallenge().startsWith(challenge.substring(0, 1)))
+        .ifPresent(node -> challenges.add(node.getChallenge()))
+    );
+    return List.copyOf(challenges);
   }
 
   /**
