@@ -29,8 +29,9 @@ public class MyGraph {
   private Node start;
   private Node end;
 
-  static class EndReachedException extends RuntimeException { /* intentionally empty */ }
-  static class NoPathFoundException extends RuntimeException { /* intentionally empty */ }
+  static class GetChallengeSuccess extends RuntimeException { /* intentionally empty */ }
+  static class GetChallengeFailure extends RuntimeException { /* intentionally empty */ }
+  static class SetStatusException extends RuntimeException {  /* intentionally empty */ }
 
   private MyGraph() { /* hide constructor */ }
 
@@ -54,39 +55,43 @@ public class MyGraph {
     return myGraph;
   }
 
-  private Node getNextUntriedNode() {
-    GraphPath<Node, DefaultWeightedEdge> graphPath = Optional.ofNullable(shortestPath.getPath(start, end)).orElseThrow(NoPathFoundException::new);
-    return graphPath.getVertexList().stream().filter(node -> node.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(EndReachedException::new);
+  private String getChallenge() {
+    GraphPath<Node, DefaultWeightedEdge> graphPath = Optional.ofNullable(shortestPath.getPath(start, end)).orElseThrow(GetChallengeFailure::new);
+    Node node = graphPath.getVertexList().stream().filter(x -> x.getStatus().equals(Node.STATUS.UNTRIED)).findFirst().orElseThrow(GetChallengeSuccess::new);
+    return node.getChallenge(); // continue
   }
 
-  private void setNodesStatus(String challenge, Node.STATUS status) {
-    graph.vertexSet().stream().filter(node -> node.getChallenge().equals(challenge)).forEach(node -> node.setStatus(status));
+  private void setStatus(String status) {
+    try {
+      String challenge = getChallenge();
+      graph.vertexSet().stream().filter(node -> node.getChallenge().equals(challenge)).forEach(node -> node.setStatus(Node.STATUS.valueOf(status.toUpperCase())));
+    } catch (RuntimeException ignored) {
+      throw new SetStatusException();
+    }
   }
 
   public String GET() {
     try {
-      return getNextUntriedNode().getChallenge();
-    } catch (RuntimeException e) {
-      return null;
+      return getChallenge(); // return 2xx
+    } catch (RuntimeException ignored) {
+      return null;           // return 4xx
     }
   }
 
   public String POST(String status) {
     if (!List.of("success", "failure").contains(status)) {
-      return "invalid";
+      return "invalid";      // return 4xx
     }
     try {
-      setNodesStatus(getNextUntriedNode().getChallenge(), Node.STATUS.valueOf(status.toUpperCase()));
-    } catch (RuntimeException ignored) {
-      return "invalid";
-    }
-    try {
-      getNextUntriedNode().getChallenge();
-      return "continue";
-    } catch (NoPathFoundException e) {
-      return "failure";
-    } catch (EndReachedException e) {
-      return "success";
+      setStatus(status);
+      getChallenge();
+      return "continue";     // return 2xx
+    } catch (GetChallengeFailure ignored) {
+      return "failure";      // return 2xx
+    } catch (GetChallengeSuccess ignored) {
+      return "success";      // return 2xx
+    } catch (SetStatusException ignored) {
+      return "invalid";      // return 4xx
     }
   }
 
