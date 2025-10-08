@@ -98,14 +98,14 @@ public class MyGraph {
    * @return a list of distinct challenge identifiers corresponding to untried nodes in the graph
    */
   public List<String> getChallenges() {
-    List<GraphPath<Node, DefaultWeightedEdge>> graphPaths = allDirectedPaths.getAllPaths(start, end, false, 100);
-    String challenge = getChallenge();
+    List<GraphPath<Node, DefaultWeightedEdge>> graphPaths = allDirectedPaths.getAllPaths(start, end, false, graph.edgeSet().size());
+    String prefix = getChallenge().substring(0, 1);
     Set<String> challenges =  new HashSet<>();
     graphPaths.forEach(graphPath ->
       graphPath.getVertexList().stream()
         .filter(node -> node.getStatus().equals(Node.STATUS.UNTRIED))
         .findFirst()
-        .filter(node -> node.getChallenge().startsWith(challenge.substring(0, 1)))
+        .filter(node -> node.getChallenge().startsWith(prefix))
         .ifPresent(node -> challenges.add(node.getChallenge()))
     );
     return List.copyOf(challenges);

@@ -37,6 +37,10 @@ class MyGraphTest {
     assertEquals(2, challenges.size());
     assertTrue(challenges.contains("DVP"));
     assertTrue(challenges.contains("DSC"));
+    assertDoesNotThrow(() -> myGraph.setStatus("success"));
+    challenges = myGraph.getChallenges();
+    assertEquals(1, challenges.size());
+    assertTrue(challenges.contains("DSC"));
   }
 
   @Test
